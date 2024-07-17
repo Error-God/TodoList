@@ -4,72 +4,64 @@
 //
 //  Created by Kumar, Govinda on 17/07/24.
 //
-
 import SwiftUI
 import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var viewModel: TodoViewModel
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+    @State private var showEditView = false
+    @State private var showAddView = false
+
+    init(context: NSManagedObjectContext) {
+        _viewModel = StateObject(wrappedValue: TodoViewModel(context: context))
+    }
 
     var body: some View {
         NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+            VStack {
+                List {
+                    ForEach(viewModel.tasks) { task in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(task.desc ?? "")
+                                .font(.title)
+                            Text(task.timestamp!, formatter: itemFormatter)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .onTapGesture {
+                            viewModel.selectedTask = task
+                            showEditView = true
+                        }
                     }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+                    .onDelete(perform: viewModel.deleteItems)
                 }
             }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            .navigationTitle("Todo List")
+            .sheet(isPresented: $showEditView) {
+                if let selectedTask = viewModel.selectedTask {
+                    EditTaskView(viewModel: viewModel, task: selectedTask)
+                }
             }
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            .sheet(isPresented: $showAddView) {
+                AddTaskView(viewModel: viewModel)
             }
+            .overlay(
+                Button(action: {
+                    showAddView = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(radius: 10)
+                }
+                .padding()
+                .position(x: UIScreen.main.bounds.width - 50, y: UIScreen.main.bounds.height - 220)
+            )
         }
     }
 }
@@ -82,5 +74,5 @@ private let itemFormatter: DateFormatter = {
 }()
 
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView(context: PersistenceController.preview.container.viewContext)
 }
