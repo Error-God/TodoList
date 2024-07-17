@@ -13,6 +13,8 @@ struct ContentView: View {
 
     @State private var showEditView = false
     @State private var showAddView = false
+    @State private var showAddButton = true
+    @State private var isToday = true
 
     init(context: NSManagedObjectContext) {
         _viewModel = StateObject(wrappedValue: TodoViewModel(context: context))
@@ -22,7 +24,7 @@ struct ContentView: View {
         NavigationView {
             VStack {
                 List {
-                    ForEach(viewModel.tasks) { task in
+                    ForEach(viewModel.daysTask) { task in
                         VStack(alignment: .leading, spacing: 5) {
                             Text(task.desc ?? "")
                                 .font(.title)
@@ -38,7 +40,33 @@ struct ContentView: View {
                     .onDelete(perform: viewModel.deleteItems)
                 }
             }
-            .navigationTitle("Todo List")
+            .navigationTitle("Tasks for \(String(describing: viewModel.selectedDay))")
+            .toolbar(content: {
+                ToolbarItem(placement: ToolbarItemPlacement.topBarLeading) {
+                    Button("Yesterday"){
+                        viewModel.selectedDay = "yesterday"
+                        showAddButton = false
+                        isToday = false
+                    }
+                    .opacity(isToday ? 1.0 : 0.0)
+                }
+                ToolbarItem(placement: ToolbarItemPlacement.automatic) {
+                    Button("Today"){
+                        viewModel.selectedDay = "today"
+                        showAddButton = true
+                        isToday = true
+                    }
+                    .opacity(isToday ? 0.0 : 1.0)
+                }
+                ToolbarItem(placement: ToolbarItemPlacement.topBarTrailing) {
+                    Button("Tomorrow"){
+                        viewModel.selectedDay = "tomorrow"
+                        showAddButton = true
+                        isToday = false
+                    }
+                    .opacity(isToday ? 1.0 : 0.0)
+                }
+            })
             .sheet(isPresented: $showEditView) {
                 if let selectedTask = viewModel.selectedTask {
                     EditTaskView(viewModel: viewModel, task: selectedTask)
@@ -58,6 +86,7 @@ struct ContentView: View {
                         .background(Color.blue)
                         .clipShape(Circle())
                         .shadow(radius: 10)
+                        .opacity(showAddButton ? 1.0 : 0.0)
                 }
                 .padding()
                 .position(x: UIScreen.main.bounds.width - 50, y: UIScreen.main.bounds.height - 220)

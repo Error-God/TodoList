@@ -11,6 +11,20 @@ import CoreData
 class TodoViewModel: ObservableObject {
     @Published var tasks: [TodoEntity] = []
     @Published var selectedTask: TodoEntity?
+    @Published var selectedDay: String = "today"
+    
+    var daysTask: [TodoEntity] {
+        var tasksForDay: Date
+        switch selectedDay {
+        case "yesterday":
+            tasksForDay = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        case "tomorrow":
+            tasksForDay = Calendar.current.date(byAdding: .day, value: +1, to: Date())!
+        default:
+            tasksForDay = Calendar.current.startOfDay(for: Date())
+        }
+        return tasks.filter { Calendar.current.isDate($0.timestamp ?? Date(), inSameDayAs: tasksForDay) }
+    }
     
     private var viewContext: NSManagedObjectContext
     
@@ -33,7 +47,11 @@ class TodoViewModel: ObservableObject {
     func addItem(_ desc: String) {
         let newTask = TodoEntity(context: viewContext)
         newTask.desc = desc
-        newTask.timestamp = Date()
+        if selectedDay == "today"{
+            newTask.timestamp = Date()
+        } else if selectedDay == "tomorrow"{
+            newTask.timestamp = Calendar.current.date(byAdding: .day, value: +1, to: Date())
+        }
         
         saveContext()
         fetchTasks()
