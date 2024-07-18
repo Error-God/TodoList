@@ -22,7 +22,7 @@ struct AddTaskView: View {
                     .padding(.leading)
                     .frame(maxWidth: .infinity)
                     .frame(height: 45)
-                    .background(Color.gray)
+                    .background(Color.gray.opacity(0.3))
                     .cornerRadius(10)
                     .padding(.horizontal)
                     .focused($addDescField)

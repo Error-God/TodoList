@@ -12,6 +12,7 @@ class TodoViewModel: ObservableObject {
     @Published var tasks: [TodoEntity] = []
     @Published var selectedTask: TodoEntity?
     @Published var selectedDay: String = "today"
+    @Published var updatedstatus: String = "OPEN"
     
     var daysTask: [TodoEntity] {
         var tasksForDay: Date
@@ -47,6 +48,7 @@ class TodoViewModel: ObservableObject {
     func addItem(_ desc: String) {
         let newTask = TodoEntity(context: viewContext)
         newTask.desc = desc
+        newTask.status = "OPEN"
         if selectedDay == "today"{
             newTask.timestamp = Date()
         } else if selectedDay == "tomorrow"{
@@ -65,6 +67,12 @@ class TodoViewModel: ObservableObject {
     
     func deleteItems(at offsets: IndexSet) {
         offsets.map { tasks[$0] }.forEach(viewContext.delete)
+        saveContext()
+        fetchTasks()
+    }
+    
+    func updateStatus(_ task: TodoEntity, with newStatus: String){
+        task.status = newStatus
         saveContext()
         fetchTasks()
     }
